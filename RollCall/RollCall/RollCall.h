@@ -19,6 +19,7 @@ class CRollCallApp : public CWinApp
 {
 public:
 	CRollCallApp();
+	~CRollCallApp();
 
 // ÖØÐ´
 public:

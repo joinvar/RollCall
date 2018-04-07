@@ -4,7 +4,7 @@
 
 #pragma once
 
-
+#include "ADOCom.h"
 // CRollCallDlg 对话框
 class CRollCallDlg : public CDialogEx
 {
@@ -33,6 +33,11 @@ protected:
 
 
 public:
-	CFont m_Font;
+	CFont m_Font;   //字体
+	CADOCom m_AdoCon;//ADO 对象
+	BOOL	m_bIsUpData;
+
+public:
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnBtnNextName();
 };

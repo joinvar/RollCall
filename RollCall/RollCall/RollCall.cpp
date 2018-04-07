@@ -29,7 +29,10 @@ CRollCallApp::CRollCallApp()
 	// 将所有重要的初始化放置在 InitInstance 中
 }
 
-
+CRollCallApp::~CRollCallApp()
+{
+	::CoUninitialize();
+}
 // 唯一的一个 CRollCallApp 对象
 
 CRollCallApp theApp;

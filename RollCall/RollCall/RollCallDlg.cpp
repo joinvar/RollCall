@@ -63,6 +63,7 @@ BEGIN_MESSAGE_MAP(CRollCallDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_CTLCOLOR()
+	ON_BN_CLICKED(IDC_BUTTON1, &CRollCallDlg::OnBtnNextName)
 END_MESSAGE_MAP()
 
 
@@ -97,10 +98,11 @@ BOOL CRollCallDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO:  在此添加额外的初始化代码
+	// 设置字体大小和样式
 	m_Font.CreatePointFont(560, _T("宋体"));
 	GetDlgItem(IDC_STATICNAME)->SetFont(&m_Font);
-
+	m_AdoCon.OnInitADOConn();	
+	m_bIsUpData = FALSE;//默认第一次更新
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -166,4 +168,66 @@ HBRUSH CRollCallDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	}
 	// TODO:  如果默认的不是所需画笔，则返回另一个画笔
 	return hbr;
+}
+
+
+void CRollCallDlg::OnBtnNextName()
+{
+	SetDlgItemText(IDC_BUTTON1, _T("下一个"));
+	try
+	{
+		CString csSQL;
+		m_AdoCon.m_pRecordset.CreateInstance("ADODB.Recordset");
+		//将UsedName 字段置空
+		if (m_bIsUpData == FALSE)
+		{
+			m_bIsUpData = TRUE;
+			csSQL = _T("select * from AllName");			
+			m_AdoCon.m_pRecordset->Open((_bstr_t)(_variant_t)csSQL, m_AdoCon.m_pConnection.GetInterfacePtr(),
+				adOpenKeyset, adLockOptimistic, -1);
+			while (m_AdoCon.m_pRecordset->adoEOF == 0)
+			{
+				m_AdoCon.m_pRecordset->PutCollect("UsedName", (_bstr_t)"");
+				m_AdoCon.m_pRecordset->MoveNext();
+			}
+			if (m_AdoCon.m_pRecordset != NULL)
+			{
+				m_AdoCon.m_pRecordset->Close();
+			}
+		}
+		
+		//从数据库中随机获取一条符合条件的记录
+		csSQL = _T("select * from AllName where UsedName = '' order by right(cstr(rnd(-int(rnd(-timer())*100+id)))*1000*Now(),2) "); //order by rnd(ID)"
+		CString csValue = _T("");		
+		m_AdoCon.m_pRecordset->Open((_bstr_t)(_variant_t)csSQL, m_AdoCon.m_pConnection.GetInterfacePtr(), adOpenKeyset, adLockOptimistic, -1);
+		if (!m_AdoCon.m_pRecordset->adoEOF)
+		{
+			//获取名字
+			csValue = (char*)(_bstr_t)m_AdoCon.m_pRecordset->GetCollect("AllName");
+			//获取后置UsedName,防止下次获取名字重复
+			//m_AdoCon.m_pRecordset->MoveFirst();  //这句和下句都可以用
+			m_AdoCon.m_pRecordset->Move((long)0, vtMissing);
+			m_AdoCon.m_pRecordset->PutCollect("UsedName", (_bstr_t)csValue);
+			m_AdoCon.m_pRecordset->Update();
+			SetDlgItemText(IDC_STATICNAME, csValue);
+		}
+		else
+		{
+			SetDlgItemText(IDC_STATICNAME, _T("点名完毕"));
+		}		
+		if (m_AdoCon.m_pRecordset != NULL)
+		{
+			m_AdoCon.m_pRecordset->Close();
+		}
+
+	}
+	catch (_com_error e)
+	{
+		CString csTmp;
+		csTmp.Format(_T("%X"), e.Error());
+		AfxMessageBox(csTmp);
+		AfxMessageBox(e.Description());
+		AfxMessageBox(e.ErrorMessage());
+	}
+
 }
